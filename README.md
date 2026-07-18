@@ -766,33 +766,6 @@ Update the GitHub username or repository URL when your final remote is different
 
 ---
 
-## ✅ Recruiter Highlights
-
-This project demonstrates practical junior full-stack ASP.NET development skills, including:
-
-- ✅ ASP.NET Core 9 Web API development
-- ✅ Angular 20 standalone frontend development
-- ✅ TypeScript 5.9 application code
-- ✅ Entity Framework Core migrations and PostgreSQL persistence
-- ✅ Layered architecture with Domain, Application, Infrastructure, and API projects
-- ✅ Repository and Unit of Work patterns
-- ✅ Dynamic API-driven route and schedule discovery
-- ✅ Schedule-specific seat availability
-- ✅ Transactional multi-seat booking
-- ✅ Concurrent double-booking protection
-- ✅ Passenger-owned ticket cancellation
-- ✅ DTO and controller validation
-- ✅ Safe HTTP conflict, forbidden, not-found, and problem responses
-- ✅ Responsive Bookme-inspired original UI
-- ✅ Local operator-logo asset integration
-- ✅ Loading, empty, error, validation, and success states
-- ✅ Swagger/OpenAPI documentation
-- ✅ xUnit, Moq, and EF Core InMemory tests
-- ✅ Secret-safe local development configuration
-- ✅ GitHub-ready screenshots and documentation
-
----
-
 
 ## 👨‍💻 Author
 
