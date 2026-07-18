@@ -31,18 +31,6 @@
 |---|---|
 | ![SafarPK successful reservation](docs/screenshots/reserved.png) | ![Bus Ticket Reservation System Swagger API](docs/screenshots/swagger.png) |
 
-### Screenshot Files
-
-```text
-docs/screenshots/
-├── booking.png
-├── home.png
-├── reserved.png
-├── search.png
-├── seats.png
-└── swagger.png
-```
-
 ---
 
 ## 🚀 Project Overview
@@ -807,44 +795,6 @@ This project demonstrates practical junior full-stack ASP.NET development skills
 
 ---
 
-## 📝 Resume-Friendly Project Summary
-
-**SafarPK — Bus Ticket Reservation System** — Developed a responsive full-stack Pakistan bus-booking application using ASP.NET Core 9, Angular 20, Entity Framework Core, and PostgreSQL. Implemented database-backed route discovery, schedule search, seat-plan visualization, transactional multi-seat reservation and purchase, concurrent double-booking protection, passenger-owned ticket cancellation, Pakistan mobile validation, Swagger documentation, responsive Bookme-inspired UI, local operator assets, and 19 focused xUnit tests.
-
----
-
-## 🚀 Future Improvements
-
-- Add real ASP.NET Core Identity/JWT authentication instead of static demo forms
-- Add payment-gateway integration and payment transaction records
-- Move fare from `Bus` to route/schedule-specific pricing
-- Store verified road distances and duration data
-- Add operator, terminal, amenity, and bus-class management
-- Add booking-history lookup by mobile and reference number
-- Add reservation-expiry and automatic seat release
-- Add email/SMS ticket notifications
-- Generate printable or downloadable ticket PDFs
-- Add administrator CRUD screens for buses, routes, schedules, and fares
-- Add pagination metadata to the route API
-- Add frontend unit and end-to-end browser testing
-- Add production Docker and deployment configuration
-- Add CI/CD with GitHub Actions
-- Add structured logging, monitoring, rate limiting, backups, and audit history
-
----
-
-## ⚠️ Known Limitations
-
-- Sign-in and sign-up are static frontend demonstrations and do not create backend accounts.
-- English and PKR selectors are intentionally static one-option dropdowns.
-- Payment is simulated by changing ticket status to `Sold`; no real payment provider is connected.
-- Cancellation requires a ticket ID and booking mobile number; there is no authenticated customer account history.
-- Demo distances are generated estimates rather than verified road distances.
-- Price is currently stored on the bus, so it is not route- or schedule-specific.
-- The seed script creates broad demo availability between every listed city and is not a real operator timetable.
-- Production operation still requires hardened identity, HTTPS deployment, centralized secrets, monitoring, backups, payments, and security review.
-
----
 
 ## 👨‍💻 Author
 
