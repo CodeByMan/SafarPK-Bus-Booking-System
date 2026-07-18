@@ -38,9 +38,6 @@
 **SafarPK** is a full-stack bus ticket reservation portfolio application focused on intercity travel across Pakistan. Passengers can browse dynamically available routes, search scheduled buses, compare fares and departure times, open a schedule-specific seat plan, reserve or purchase multiple seats, and cancel a ticket by proving ownership with the booking mobile number.
 
 The application combines an **Angular 20 standalone frontend** with an **ASP.NET Core 9 Web API**, **Entity Framework Core 9**, and **PostgreSQL**. Its Bookme-inspired interface is implemented as an original portfolio design with SafarPK branding, responsive layouts, local bus-company assets, live API data, and safe loading, validation, empty, success, and error states.
-
-The repository intentionally keeps authentication simple. The navbar sign-in and sign-up forms are static frontend demonstrations; the actual reservation workflow is anonymous and associates every ticket with a passenger name and Pakistani mobile number.
-
 ---
 
 ## 🎯 Project Purpose
