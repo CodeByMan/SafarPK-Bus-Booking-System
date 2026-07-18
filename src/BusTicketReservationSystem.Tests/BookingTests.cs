@@ -1,0 +1,246 @@
+using BusTicketReservationSystem.Application.Contracts.DTOs;
+using BusTicketReservationSystem.Application.Contracts.Interfaces;
+using BusTicketReservationSystem.Application.Services;
+using BusTicketReservationSystem.Domain.Entities;
+using BusTicketReservationSystem.Domain.Enums;
+using BusTicketReservationSystem.Domain.ValueObjects;
+using Microsoft.EntityFrameworkCore;
+using Moq;
+
+namespace BusTicketReservationSystem.Tests
+{
+    public class BookingTests
+    {
+        private readonly Mock<IBusScheduleRepository> _scheduleRepo = new();
+        private readonly Mock<ISeatRepository> _seatRepo = new();
+        private readonly Mock<ITicketRepository> _ticketRepo = new();
+        private readonly Mock<IPassengerRepository> _passengerRepo = new();
+        private readonly Mock<IUnitOfWork> _uow = new();
+        private readonly BookingService _service;
+
+        public BookingTests()
+        {
+            _uow.Setup(x => x.BeginTransactionAsync()).Returns(Task.CompletedTask);
+            _uow.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
+            _uow.Setup(x => x.CommitAsync()).Returns(Task.CompletedTask);
+            _uow.Setup(x => x.RollbackAsync()).Returns(Task.CompletedTask);
+
+            _service = new BookingService(
+                _scheduleRepo.Object,
+                _seatRepo.Object,
+                _ticketRepo.Object,
+                _passengerRepo.Object,
+                _uow.Object);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldReturnSuccess_WhenInputIsValid()
+        {
+            var schedule = CreateSchedule();
+            var seat = CreateSeat(schedule.BusId, "A1");
+            var passenger = CreatePassenger("03001234567");
+            var input = CreateInput(schedule.Id, seat.Id);
+
+            _scheduleRepo.Setup(x => x.GetByIdAsync(schedule.Id)).ReturnsAsync(schedule);
+            _seatRepo.Setup(x => x.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+                .ReturnsAsync(new List<Seat> { seat });
+            _passengerRepo.Setup(x => x.FindByMobileAsync(input.PassengerMobile)).ReturnsAsync(passenger);
+
+            var result = await _service.BookSeatAsync(input);
+
+            Assert.True(result.Success);
+            Assert.Equal(BookingResultCode.Success, result.Code);
+            Assert.Single(result.Seat);
+            Assert.NotNull(result.Seat[0].TicketId);
+            _uow.Verify(x => x.CommitAsync(), Times.Once);
+            _uow.Verify(x => x.RollbackAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldReturnNotFound_WhenScheduleIsMissing()
+        {
+            var input = CreateInput(Guid.NewGuid(), Guid.NewGuid());
+            _scheduleRepo.Setup(x => x.GetByIdAsync(input.BusScheduleId)).ReturnsAsync((BusSchedule?)null);
+
+            var result = await _service.BookSeatAsync(input);
+
+            Assert.False(result.Success);
+            Assert.Equal(BookingResultCode.NotFound, result.Code);
+            _uow.Verify(x => x.BeginTransactionAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldRejectMissingSeat()
+        {
+            var schedule = CreateSchedule();
+            var input = CreateInput(schedule.Id, Guid.NewGuid());
+            _scheduleRepo.Setup(x => x.GetByIdAsync(schedule.Id)).ReturnsAsync(schedule);
+            _seatRepo.Setup(x => x.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+                .ReturnsAsync(Array.Empty<Seat>());
+
+            var result = await _service.BookSeatAsync(input);
+
+            Assert.Equal(BookingResultCode.ValidationError, result.Code);
+            Assert.Contains("do not exist", result.Message, StringComparison.OrdinalIgnoreCase);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldRejectSeatFromAnotherBus()
+        {
+            var schedule = CreateSchedule();
+            var seat = CreateSeat(Guid.NewGuid(), "B1");
+            var input = CreateInput(schedule.Id, seat.Id);
+            _scheduleRepo.Setup(x => x.GetByIdAsync(schedule.Id)).ReturnsAsync(schedule);
+            _seatRepo.Setup(x => x.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+                .ReturnsAsync(new List<Seat> { seat });
+
+            var result = await _service.BookSeatAsync(input);
+
+            Assert.Equal(BookingResultCode.ValidationError, result.Code);
+            Assert.Contains("scheduled bus", result.Message, StringComparison.OrdinalIgnoreCase);
+            _uow.Verify(x => x.BeginTransactionAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldRejectDuplicateSeatIds()
+        {
+            var seatId = Guid.NewGuid();
+            var input = CreateInput(Guid.NewGuid(), seatId);
+            input.SeatId.Add(seatId);
+
+            var result = await _service.BookSeatAsync(input);
+
+            Assert.Equal(BookingResultCode.ValidationError, result.Code);
+            Assert.Contains("Duplicate", result.Message, StringComparison.OrdinalIgnoreCase);
+            _scheduleRepo.Verify(x => x.GetByIdAsync(It.IsAny<Guid>()), Times.Never);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldRollback_WhenSeatIsAlreadyBooked()
+        {
+            var schedule = CreateSchedule();
+            var seat = CreateSeat(schedule.BusId, "A2");
+            var input = CreateInput(schedule.Id, seat.Id);
+            var passenger = CreatePassenger(input.PassengerMobile);
+            var ticket = new Ticket
+            {
+                Id = Guid.NewGuid(),
+                SeatId = seat.Id,
+                BusScheduleId = schedule.Id,
+                Status = TicketStatus.Booked
+            };
+
+            _scheduleRepo.Setup(x => x.GetByIdAsync(schedule.Id)).ReturnsAsync(schedule);
+            _seatRepo.Setup(x => x.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+                .ReturnsAsync(new List<Seat> { seat });
+            _passengerRepo.Setup(x => x.FindByMobileAsync(input.PassengerMobile)).ReturnsAsync(passenger);
+            _ticketRepo.Setup(x => x.FindBySeatAndScheduleAsync(seat.Id, schedule.Id)).ReturnsAsync(ticket);
+
+            var result = await _service.BookSeatAsync(input);
+
+            Assert.Equal(BookingResultCode.Conflict, result.Code);
+            _uow.Verify(x => x.RollbackAsync(), Times.Once);
+            _uow.Verify(x => x.CommitAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldReturnConflict_WhenConcurrentRequestWins()
+        {
+            var schedule = CreateSchedule();
+            var seat = CreateSeat(schedule.BusId, "A3");
+            var input = CreateInput(schedule.Id, seat.Id);
+            var passenger = CreatePassenger(input.PassengerMobile);
+
+            _scheduleRepo.Setup(x => x.GetByIdAsync(schedule.Id)).ReturnsAsync(schedule);
+            _seatRepo.Setup(x => x.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+                .ReturnsAsync(new List<Seat> { seat });
+            _passengerRepo.Setup(x => x.FindByMobileAsync(input.PassengerMobile)).ReturnsAsync(passenger);
+            _uow.Setup(x => x.SaveChangesAsync()).ThrowsAsync(new DbUpdateException("Unique index conflict."));
+
+            var result = await _service.BookSeatAsync(input);
+
+            Assert.Equal(BookingResultCode.Conflict, result.Code);
+            Assert.DoesNotContain("Unique index", result.Message, StringComparison.OrdinalIgnoreCase);
+            _uow.Verify(x => x.RollbackAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task BookSeatAsync_ShouldRollbackAndRethrow_UnexpectedFailure()
+        {
+            var schedule = CreateSchedule();
+            var seat = CreateSeat(schedule.BusId, "A4");
+            var input = CreateInput(schedule.Id, seat.Id);
+            var passenger = CreatePassenger(input.PassengerMobile);
+
+            _scheduleRepo.Setup(x => x.GetByIdAsync(schedule.Id)).ReturnsAsync(schedule);
+            _seatRepo.Setup(x => x.GetByIdsAsync(It.IsAny<IEnumerable<Guid>>()))
+                .ReturnsAsync(new List<Seat> { seat });
+            _passengerRepo.Setup(x => x.FindByMobileAsync(input.PassengerMobile)).ReturnsAsync(passenger);
+            _uow.Setup(x => x.SaveChangesAsync()).ThrowsAsync(new InvalidOperationException("Internal failure."));
+
+            await Assert.ThrowsAsync<InvalidOperationException>(() => _service.BookSeatAsync(input));
+            _uow.Verify(x => x.RollbackAsync(), Times.Once);
+            _uow.Verify(x => x.CommitAsync(), Times.Never);
+        }
+
+        private static BusSchedule CreateSchedule()
+        {
+            var busId = Guid.NewGuid();
+            return new BusSchedule
+            {
+                Id = Guid.NewGuid(),
+                BusId = busId,
+                RouteId = Guid.NewGuid(),
+                JourneyDate = DateTime.UtcNow.Date.AddDays(7),
+                StartTime = DateTime.UtcNow.Date.AddDays(7).AddHours(8),
+                ArrivalTime = DateTime.UtcNow.Date.AddDays(7).AddHours(13),
+                Bus = new Bus
+                {
+                    Id = busId,
+                    BusName = "GreenLine",
+                    CompanyName = "GreenLine Ltd.",
+                    TotalSeats = 40
+                },
+                Route = new Route
+                {
+                    FromCity = "Dhaka",
+                    ToCity = "Mymensingh",
+                    BoardingPoint = "Gabtoli",
+                    DroppingPoint = "Mymensingh Terminal"
+                }
+            };
+        }
+
+        private static Seat CreateSeat(Guid busId, string number)
+        {
+            return new Seat(new SeatPosition(number, 1))
+            {
+                Id = Guid.NewGuid(),
+                BusId = busId,
+                Status = SeatStatus.Available
+            };
+        }
+
+        private static Passenger CreatePassenger(string mobile)
+        {
+            return new Passenger(new PassengerContact("Test Passenger", mobile))
+            {
+                Id = Guid.NewGuid()
+            };
+        }
+
+        private static BookSeatInputDto CreateInput(Guid scheduleId, Guid seatId)
+        {
+            return new BookSeatInputDto
+            {
+                BusScheduleId = scheduleId,
+                SeatId = new List<Guid> { seatId },
+                PassengerName = "Test Passenger",
+                PassengerMobile = "03001234567",
+                BoardingPoint = "Gabtoli",
+                DroppingPoint = "Mymensingh Terminal",
+                Action = "book"
+            };
+        }
+    }
+}

@@ -1,0 +1,9 @@
+@BusTicketReservationSystem.WebApi_HostAddress = https://localhost:7196
+
+GET {{BusTicketReservationSystem.WebApi_HostAddress}}/api/Search?from=Lahore&to=Islamabad&date=2026-12-01
+Accept: application/json
+
+###
+
+GET {{BusTicketReservationSystem.WebApi_HostAddress}}/api/Booking/seatplan/00000000-0000-0000-0000-000000000000
+Accept: application/json

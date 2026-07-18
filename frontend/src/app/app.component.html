@@ -1,0 +1,218 @@
+<div class="app-shell">
+  <header class="site-hero">
+    <div class="site-hero__shade"></div>
+
+    <div class="site-container header-content">
+      <div class="topbar">
+        <a class="brand" routerLink="/search" (click)="closeMobileMenu()" aria-label="SafarPK home">
+          <img src="/logo.png" alt="SafarPK logo" />
+          <span class="brand__copy">
+            <strong>SafarPK</strong>
+            <small>Pakistan travel, simplified</small>
+          </span>
+        </a>
+
+        <button
+          class="mobile-menu-button"
+          type="button"
+          (click)="toggleMobileMenu()"
+          [attr.aria-expanded]="mobileMenuOpen"
+          aria-label="Toggle navigation"
+        >
+          <span class="material-icons">menu</span>
+        </button>
+
+        <div class="topbar-actions" [class.topbar-actions--open]="mobileMenuOpen">
+          <label class="static-select static-select--language" aria-label="Language selection">
+            <span class="material-icons static-select__icon">language</span>
+            <select [(ngModel)]="selectedLanguage" title="Language">
+              <option *ngFor="let language of languages" [value]="language">{{ language }}</option>
+            </select>
+            <span class="material-icons static-select__caret" aria-hidden="true">expand_more</span>
+          </label>
+
+          <label class="static-select static-select--currency" aria-label="Currency selection">
+            <select [(ngModel)]="selectedCurrency" title="Currency">
+              <option *ngFor="let currency of currencies" [value]="currency">{{ currency }}</option>
+            </select>
+            <span class="material-icons static-select__caret" aria-hidden="true">expand_more</span>
+          </label>
+
+          <ng-container *ngIf="!demoUserName; else signedInActions">
+            <button type="button" class="login-button" (click)="openAuthModal('signin')">Sign in</button>
+            <button type="button" class="signup-button" (click)="openAuthModal('signup')">Sign up</button>
+          </ng-container>
+
+          <ng-template #signedInActions>
+            <div class="signed-in-chip">
+              <span class="material-icons">account_circle</span>
+              <span>{{ demoUserName }}</span>
+              <button type="button" (click)="logout()" aria-label="Sign out">
+                <span class="material-icons">logout</span>
+              </button>
+            </div>
+          </ng-template>
+        </div>
+      </div>
+
+      <nav class="service-nav" aria-label="Travel services">
+        <button class="service-arrow" type="button" aria-label="Previous services">
+          <span class="material-icons">chevron_left</span>
+        </button>
+
+        <div class="service-nav__track">
+          <a
+            routerLink="/search"
+            routerLinkActive="service-item--active"
+            class="service-item service-item--active"
+            (click)="closeMobileMenu()"
+          >
+            <span class="material-icons">directions_bus</span>
+            <span>Bus</span>
+          </a>
+          <button type="button" class="service-item service-item--disabled">
+            <span class="material-icons">hotel</span><span>Hotel</span>
+          </button>
+          <button type="button" class="service-item service-item--disabled">
+            <span class="material-icons">directions_car</span><span>Car Rental</span>
+          </button>
+          <button type="button" class="service-item service-item--disabled">
+            <span class="material-icons">confirmation_number</span><span>Events</span>
+          </button>
+          <button type="button" class="service-item service-item--disabled">
+            <span class="material-icons">account_balance</span><span>Umrah</span>
+          </button>
+          <button type="button" class="service-item service-item--disabled">
+            <span class="material-icons">beach_access</span><span>Tours</span>
+          </button>
+          <button type="button" class="service-item service-item--disabled">
+            <span class="material-icons">travel_explore</span><span>Visit Saudi</span>
+          </button>
+        </div>
+
+        <button class="service-arrow" type="button" aria-label="Next services">
+          <span class="material-icons">chevron_right</span>
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="main-content">
+    <router-outlet></router-outlet>
+  </main>
+
+  <footer class="site-footer">
+    <div class="site-container footer-grid">
+      <div class="footer-brand">
+        <a class="brand brand--footer" routerLink="/search">
+          <img src="/logo.png" alt="SafarPK logo" />
+          <span class="brand__copy"><strong>SafarPK</strong></span>
+        </a>
+        <p>
+          Search live Pakistan bus schedules, compare departures, select seats and reserve or
+          purchase tickets through the connected ASP.NET Core API.
+        </p>
+        <div class="social-links" aria-label="Social links">
+          <a href="#" aria-label="Facebook">f</a>
+          <a href="#" aria-label="Instagram">◎</a>
+          <a href="#" aria-label="X">𝕏</a>
+          <a href="#" aria-label="LinkedIn">in</a>
+        </div>
+      </div>
+
+      <div>
+        <h3>About</h3>
+        <a href="#">About SafarPK</a>
+        <a href="#">Contact us</a>
+        <a href="#">Travel guides</a>
+        <a href="#">Announcements</a>
+      </div>
+
+      <div>
+        <h3>Services</h3>
+        <a routerLink="/search">Bus booking</a>
+        <a href="#">Hotels</a>
+        <a href="#">Car rental</a>
+        <a href="#">Tours</a>
+      </div>
+
+      <div>
+        <h3>Support</h3>
+        <a href="#">Help centre</a>
+        <a href="#">Privacy policy</a>
+        <a href="#">Terms of service</a>
+        <a href="#">Refund policy</a>
+      </div>
+    </div>
+
+    <div class="footer-bottom site-container">
+      <span>© {{ currentYear }} SafarPK.</span>
+      <span>Developed by Muhammad Ali Nawaz</span>
+    </div>
+  </footer>
+
+  <div *ngIf="authMode" class="auth-backdrop" (click)="closeAuthModal()">
+    <section class="auth-modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <button class="auth-close" type="button" (click)="closeAuthModal()" aria-label="Close">
+        <span class="material-icons">close</span>
+      </button>
+
+      <div class="auth-brand">
+        <img src="/logo.png" alt="SafarPK" />
+        <div><strong>SafarPK</strong><span>Demo traveller account</span></div>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" [class.active]="authMode === 'signin'" (click)="switchAuthMode('signin')">Sign in</button>
+        <button type="button" [class.active]="authMode === 'signup'" (click)="switchAuthMode('signup')">Sign up</button>
+      </div>
+
+      <form *ngIf="authMode === 'signin'" (ngSubmit)="submitSignIn()" class="auth-form">
+        <h2>Welcome back</h2>
+        <p>This is a static portfolio form. No authentication request is sent to the backend.</p>
+        <label>
+          <span>Email address</span>
+          <div class="auth-field"><span class="material-icons">mail_outline</span><input type="email" name="signInEmail" [(ngModel)]="signInEmail" placeholder="name@example.com" required /></div>
+        </label>
+        <label>
+          <span>Password</span>
+          <div class="auth-field"><span class="material-icons">lock_outline</span><input type="password" name="signInPassword" [(ngModel)]="signInPassword" placeholder="Minimum 4 characters" minlength="4" required /></div>
+        </label>
+        <button class="auth-submit" type="submit" [disabled]="!signInEmail.trim() || signInPassword.length < 4">Sign in</button>
+      </form>
+
+      <form *ngIf="authMode === 'signup'" (ngSubmit)="submitSignUp()" class="auth-form">
+        <h2>Create demo account</h2>
+        <p>The details remain only inside this browser session.</p>
+        <label>
+          <span>Full name</span>
+          <div class="auth-field"><span class="material-icons">person_outline</span><input type="text" name="signUpName" [(ngModel)]="signUpName" placeholder="Your full name" required /></div>
+        </label>
+        <label>
+          <span>Email address</span>
+          <div class="auth-field"><span class="material-icons">mail_outline</span><input type="email" name="signUpEmail" [(ngModel)]="signUpEmail" placeholder="name@example.com" required /></div>
+        </label>
+        <label>
+          <span>Pakistan mobile</span>
+          <div class="auth-field"><span class="material-icons">phone_iphone</span><input type="tel" name="signUpMobile" [(ngModel)]="signUpMobile" maxlength="11" placeholder="03XXXXXXXXX" required /></div>
+        </label>
+        <label>
+          <span>Password</span>
+          <div class="auth-field"><span class="material-icons">lock_outline</span><input type="password" name="signUpPassword" [(ngModel)]="signUpPassword" minlength="6" placeholder="Minimum 6 characters" required /></div>
+        </label>
+        <button
+          class="auth-submit"
+          type="submit"
+          [disabled]="signUpName.trim().length < 2 || !signUpEmail.trim() || !signUpMobile.match('^03\\d{9}$') || signUpPassword.length < 6"
+        >
+          Create account
+        </button>
+      </form>
+
+      <div *ngIf="authNotice" class="auth-notice">
+        <span class="material-icons">check_circle</span>
+        <span>{{ authNotice }}</span>
+      </div>
+    </section>
+  </div>
+</div>

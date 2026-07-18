@@ -1,0 +1,206 @@
+<section class="seat-page">
+  <div class="site-container">
+    <a routerLink="/search" class="back-link">
+      <span class="material-icons">arrow_back</span> Back to search results
+    </a>
+
+    <section class="seat-header-card">
+      <div class="operator-icon"><img [src]="getOperatorLogo(companyName)" [alt]="companyName + ' logo'" /></div>
+      <div>
+        <p>Seat selection</p>
+        <h1>{{ companyName || 'Bus operator' }}</h1>
+        <span>{{ busName || 'Loading bus information...' }}</span>
+      </div>
+      <div class="booking-steps" aria-label="Booking progress">
+        <div class="booking-step booking-step--active"><b>1</b><span>Select seats</span></div>
+        <i></i>
+        <div class="booking-step"><b>2</b><span>Passenger</span></div>
+        <i></i>
+        <div class="booking-step"><b>3</b><span>Confirm</span></div>
+      </div>
+    </section>
+
+    <div *ngIf="loading" class="seat-loading">
+      <div class="spinner"></div>
+      <h2>Loading seat plan...</h2>
+    </div>
+
+    <div *ngIf="loadingError" class="message message--error">
+      <span class="material-icons">error_outline</span>
+      <span>{{ loadingError }}</span>
+      <button type="button" (click)="loadingError = ''" aria-label="Dismiss">×</button>
+    </div>
+
+    <div *ngIf="successMessage" class="message message--success">
+      <span class="material-icons">check_circle</span>
+      <span>{{ successMessage }}</span>
+      <button type="button" (click)="successMessage = ''" aria-label="Dismiss">×</button>
+    </div>
+
+    <section *ngIf="!loading" class="seat-layout-grid">
+      <article class="seat-map-panel">
+        <div class="panel-heading">
+          <div>
+            <p>Choose your preferred seats</p>
+            <h2>Bus seat plan</h2>
+          </div>
+          <span>{{ seats.length }} total seats</span>
+        </div>
+
+        <div class="seat-legend">
+          <span><i class="legend-dot legend-dot--available"></i>Available</span>
+          <span><i class="legend-dot legend-dot--selected"></i>Selected</span>
+          <span><i class="legend-dot legend-dot--booked"></i>Reserved</span>
+          <span><i class="legend-dot legend-dot--sold"></i>Sold</span>
+        </div>
+
+        <div class="bus-shell">
+          <div class="bus-front">
+            <span class="driver-label">Front</span>
+            <span class="material-icons steering-icon">sports_motorsports</span>
+          </div>
+
+          <div class="seat-rows">
+            <div *ngFor="let row of getSeatLayout(); let rowIndex = index" class="seat-row">
+              <span class="row-number">{{ rowIndex + 1 }}</span>
+
+              <div class="seat-pair">
+                <button
+                  *ngFor="let seat of row.slice(0, 2)"
+                  type="button"
+                  [class]="getSeatClass(seat)"
+                  [disabled]="seat.status !== 'Available'"
+                  (click)="toggleSeat(seat)"
+                  [attr.aria-label]="seat.seatNumber + ' ' + seat.status"
+                >
+                  <span class="seat-head"></span>
+                  <b>{{ seat.seatNumber }}</b>
+                </button>
+              </div>
+
+              <span class="aisle"></span>
+
+              <div class="seat-pair">
+                <button
+                  *ngFor="let seat of row.slice(2, 4)"
+                  type="button"
+                  [class]="getSeatClass(seat)"
+                  [disabled]="seat.status !== 'Available'"
+                  (click)="toggleSeat(seat)"
+                  [attr.aria-label]="seat.seatNumber + ' ' + seat.status"
+                >
+                  <span class="seat-head"></span>
+                  <b>{{ seat.seatNumber }}</b>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="bus-back">Rear</div>
+        </div>
+      </article>
+
+      <aside class="booking-panel">
+        <div class="booking-panel__section selected-summary">
+          <div class="panel-heading panel-heading--small">
+            <div><p>Your selection</p><h2>Booking summary</h2></div>
+            <span class="selected-count">{{ selectedSeats.length }}</span>
+          </div>
+
+          <div *ngIf="selectedSeats.length; else noSeatSelection" class="selected-seat-list">
+            <span *ngFor="let seat of selectedSeats">{{ seat.number }}</span>
+          </div>
+          <ng-template #noSeatSelection>
+            <div class="empty-selection">
+              <span class="material-icons">event_seat</span>
+              <p>Select a seat from the bus plan.</p>
+            </div>
+          </ng-template>
+
+          <div class="summary-row">
+            <span>Selected seats</span>
+            <strong>{{ selectedSeatNumbers || 'None' }}</strong>
+          </div>
+          <div class="summary-row">
+            <span>Fare</span>
+            <strong>Shown on search result</strong>
+          </div>
+        </div>
+
+        <div class="booking-panel__section passenger-form">
+          <div class="section-title">
+            <span class="material-icons">person</span>
+            <div><p>Traveller information</p><h3>Passenger details</h3></div>
+          </div>
+
+          <label>
+            <span>Full name</span>
+            <div class="form-field"><span class="material-icons">person_outline</span><input type="text" [(ngModel)]="passengerName" placeholder="Enter passenger name" /></div>
+          </label>
+
+          <label>
+            <span>Pakistan mobile number</span>
+            <div class="form-field"><span class="material-icons">phone_iphone</span><input type="tel" [(ngModel)]="mobileNumber" maxlength="11" placeholder="03XXXXXXXXX" /></div>
+            <small *ngIf="mobileNumber && !isValidMobile(mobileNumber)" class="field-error">Enter 11 digits beginning with 03.</small>
+          </label>
+
+          <label>
+            <span>Boarding point</span>
+            <div class="form-field"><span class="material-icons">trip_origin</span><select [(ngModel)]="boardingPoint"><option value="" disabled>Select boarding point</option><option *ngFor="let point of boardingPoints" [value]="point">{{ point }}</option></select></div>
+          </label>
+
+          <label>
+            <span>Dropping point</span>
+            <div class="form-field"><span class="material-icons">location_on</span><select [(ngModel)]="droppingPoint"><option value="" disabled>Select dropping point</option><option *ngFor="let point of droppingPoints" [value]="point">{{ point }}</option></select></div>
+          </label>
+        </div>
+
+        <div class="booking-actions">
+          <button
+            type="button"
+            class="reserve-button"
+            [disabled]="bookingInProgress || selectedSeats.length === 0 || !passengerName || !isValidMobile(mobileNumber) || !boardingPoint || !droppingPoint"
+            (click)="bookNow()"
+          >
+            <span class="material-icons">schedule</span>{{ bookingInProgress ? 'Processing...' : 'Reserve Seats' }}
+          </button>
+          <button
+            type="button"
+            class="buy-button"
+            [disabled]="bookingInProgress || selectedSeats.length === 0 || !passengerName || !isValidMobile(mobileNumber) || !boardingPoint || !droppingPoint"
+            (click)="buyNow()"
+          >
+            Confirm Ticket <span class="material-icons">arrow_forward</span>
+          </button>
+        </div>
+
+        <div *ngIf="lastTicketIds.length" class="ticket-success">
+          <span class="material-icons">confirmation_number</span>
+          <div>
+            <strong>Save your ticket ID</strong>
+            <code *ngFor="let id of lastTicketIds">{{ id }}</code>
+          </div>
+        </div>
+
+        <button type="button" class="cancel-toggle" (click)="showCancelForm = !showCancelForm">
+          <span class="material-icons">event_busy</span>
+          {{ showCancelForm ? 'Close cancellation form' : 'Cancel an existing ticket' }}
+        </button>
+
+        <div *ngIf="showCancelForm" class="cancel-form">
+          <h3>Cancel ticket</h3>
+          <p>Enter the ticket ID and the same Pakistan mobile number used for booking.</p>
+          <label><span>Ticket ID</span><input type="text" [(ngModel)]="ticketId" placeholder="Paste ticket ID" /></label>
+          <label><span>Booking mobile</span><input type="tel" [(ngModel)]="cancellationMobile" maxlength="11" placeholder="03XXXXXXXXX" /></label>
+          <button type="button" [disabled]="bookingInProgress || !ticketId || !isValidMobile(cancellationMobile)" (click)="cancelTicket()">Confirm cancellation</button>
+        </div>
+      </aside>
+    </section>
+
+    <section class="booking-help">
+      <article><span class="material-icons">lock</span><div><h3>Secure reservation</h3><p>Your passenger details are used only to process this booking.</p></div></article>
+      <article><span class="material-icons">support_agent</span><div><h3>Need assistance?</h3><p>Use your ticket ID and mobile number for booking support or cancellation.</p></div></article>
+      <article><span class="material-icons">schedule</span><div><h3>Seat status is live</h3><p>Unavailable seats cannot be selected and the plan refreshes after booking.</p></div></article>
+    </section>
+  </div>
+</section>

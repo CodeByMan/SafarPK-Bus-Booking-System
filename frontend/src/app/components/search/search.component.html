@@ -1,0 +1,235 @@
+<section class="search-page">
+  <div class="site-container">
+    <section class="search-card" aria-labelledby="search-title">
+      <div class="search-card__heading">
+        <div>
+          <h1 id="search-title">Search for Bus</h1>
+          <p>Find live Pakistan schedules, compare fares and reserve your preferred seat.</p>
+        </div>
+        <div class="secure-label"><span class="material-icons">verified_user</span> Secure booking</div>
+      </div>
+
+      <div class="trip-tabs" role="tablist" aria-label="Journey type">
+        <button type="button" [class.active]="journeyType === 'one-way'" (click)="setJourneyType('one-way')">One Way</button>
+        <button type="button" [class.active]="journeyType === 'round-trip'" (click)="setJourneyType('round-trip')">Round Trip</button>
+      </div>
+
+      <div class="search-form" [class.search-form--round-trip]="journeyType === 'round-trip'">
+        <div class="route-fields">
+          <label class="search-field">
+            <span class="material-icons">north_east</span>
+            <select [(ngModel)]="from" aria-label="Departure city">
+              <option value="" disabled>Departure</option>
+              <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
+            </select>
+          </label>
+
+          <button type="button" class="swap-button" (click)="swapCities()" aria-label="Swap cities">
+            <span class="material-icons">swap_horiz</span>
+          </button>
+
+          <label class="search-field">
+            <span class="material-icons">south_east</span>
+            <select [(ngModel)]="to" aria-label="Arrival city">
+              <option value="" disabled>Arrival</option>
+              <option *ngFor="let city of cities" [value]="city">{{ city }}</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="search-field">
+          <span class="material-icons">calendar_today</span>
+          <input type="date" [(ngModel)]="date" [min]="minDate" (change)="onTravelDateChanged()" aria-label="Journey date" />
+        </label>
+
+        <label *ngIf="journeyType === 'round-trip'" class="search-field">
+          <span class="material-icons">event_repeat</span>
+          <input type="date" [(ngModel)]="returnDate" [min]="date || minDate" aria-label="Return date" />
+        </label>
+
+        <button type="button" class="search-button" (click)="onSearch()" [disabled]="loading">
+          <span class="material-icons">search</span>
+          {{ loading ? 'Searching...' : 'Search' }}
+        </button>
+      </div>
+
+      <div *ngIf="searchError" class="search-error">
+        <span class="material-icons">error_outline</span>
+        <span>{{ searchError }}</span>
+      </div>
+    </section>
+
+    <section *ngIf="loading" class="results-loading">
+      <span class="spinner spinner--large"></span>
+      <h2>Finding available buses...</h2>
+      <p>Checking schedules and remaining seats for your route.</p>
+    </section>
+
+    <section *ngIf="searched && !loading" id="search-results" class="results-section content-section">
+      <div class="results-heading">
+        <div><p>Search results</p><h2>{{ routeHeading }}</h2><span>{{ date | date: 'EEEE, d MMMM y' }}</span></div>
+        <strong>{{ filteredResults.length }} of {{ results.length }} buses</strong>
+      </div>
+
+      <div *ngIf="results.length; else noResults" class="results-layout">
+        <aside class="filters-panel">
+          <div class="filters-panel__head"><h3>Filters</h3><button type="button" (click)="resetFilters()">Reset</button></div>
+
+          <div class="filter-group">
+            <h4>Bus operator</h4>
+            <label *ngFor="let company of companies">
+              <input type="checkbox" [checked]="selectedCompanies[company]" (change)="toggleCompany(company, $any($event.target).checked)" />
+              <span>{{ company }}</span>
+            </label>
+          </div>
+
+          <div class="filter-group">
+            <h4>Maximum fare</h4>
+            <input type="range" [min]="0" [max]="maximumResultPrice" [(ngModel)]="maxPrice" />
+            <div class="range-value">Up to PKR {{ maxPrice | number: '1.0-0' }}</div>
+          </div>
+
+          <div class="filter-group">
+            <h4>Bus type</h4>
+            <select [(ngModel)]="busType">
+              <option value="all">All types</option>
+              <option value="Standard">Standard</option>
+              <option value="Executive">Executive</option>
+              <option value="Business">Business</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <h4>Departure</h4>
+            <select [(ngModel)]="departureWindow">
+              <option value="all">Any time</option>
+              <option value="morning">Morning</option>
+              <option value="afternoon">Afternoon</option>
+              <option value="evening">Evening</option>
+              <option value="night">Night</option>
+            </select>
+          </div>
+        </aside>
+
+        <div class="bus-results-list">
+          <article *ngFor="let bus of filteredResults; trackBy: trackBySchedule" class="bus-result-card">
+            <div class="operator-block">
+              <div class="operator-logo"><img [src]="getOperatorLogo(bus.companyName)" [alt]="bus.companyName + ' logo'" /></div>
+              <div>
+                <h3>{{ bus.companyName }}</h3>
+                <p>{{ bus.busName }}</p>
+                <span class="bus-type-badge">{{ getBusType(bus) }}</span>
+              </div>
+            </div>
+
+            <div class="time-block">
+              <div><strong>{{ bus.startTime | date: 'h:mm a' }}</strong><span>{{ bus.routeFrom || from }}</span></div>
+              <div class="journey-line"><span>{{ getDuration(bus.startTime, bus.arrivalTime) }}</span><i></i><span class="material-icons">directions_bus</span></div>
+              <div><strong>{{ bus.arrivalTime | date: 'h:mm a' }}</strong><span>{{ bus.routeTo || to }}</span></div>
+            </div>
+
+            <div class="amenities-block">
+              <span><span class="material-icons">ac_unit</span>Air conditioned</span>
+              <span><span class="material-icons">airline_seat_recline_extra</span>Reclining seats</span>
+              <span><span class="material-icons">verified</span>Verified operator</span>
+            </div>
+
+            <div class="fare-block">
+              <span>{{ bus.seatsLeft }} seats left</span>
+              <small>Starting from</small>
+              <strong>PKR {{ bus.price | number: '1.0-0' }}</strong>
+              <a class="select-seat-button" [routerLink]="['/seatplan', bus.busScheduleId]">
+                View Seats <span class="material-icons">arrow_forward</span>
+              </a>
+            </div>
+          </article>
+
+          <div *ngIf="!filteredResults.length" class="no-filter-results">
+            No buses match the selected filters. <button type="button" (click)="resetFilters()">Reset filters</button>
+          </div>
+        </div>
+      </div>
+
+      <ng-template #noResults>
+        <div class="no-results">
+          <span class="material-icons">directions_bus_filled</span>
+          <h3>No bus found for this date</h3>
+          <p>Try another journey date or select a database-powered route below.</p>
+          <button type="button" (click)="scrollToSearch()">Change search</button>
+        </div>
+      </ng-template>
+    </section>
+
+
+    <section class="partners-section content-section">
+      <div class="section-heading">
+        <div><p>Trusted operators</p><h2>Top Bus Partners</h2></div>
+        <span>Operator logos are loaded from the project public folder.</span>
+      </div>
+
+      <div class="partner-grid">
+        <article *ngFor="let partner of partners" class="partner-card" [title]="partner.name">
+          <img [src]="partner.logo" [alt]="partner.name + ' logo'" />
+          <span>{{ partner.name }}</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="routes-section content-section" aria-labelledby="top-buses-heading">
+      <div class="top-routes-heading">
+        <div>
+          <p>Live database routes</p>
+          <h2 id="top-buses-heading">Top Buses</h2>
+        </div>
+        <span>Available for {{ routeDateLabel }}</span>
+      </div>
+
+      <div *ngIf="routesError" class="inline-message inline-message--error">
+        <span class="material-icons">info</span>{{ routesError }}
+      </div>
+
+      <div *ngIf="availableRoutes.length" class="top-routes-list">
+        <button
+          *ngFor="let route of availableRoutes; trackBy: trackByRoute"
+          type="button"
+          class="top-route-link"
+          (click)="selectAvailableRoute(route)"
+          [attr.aria-label]="'Search buses from ' + route.from + ' to ' + route.to"
+        >
+          <span>{{ route.from }} to {{ route.to }}</span>
+          <span class="top-route-link__meta">
+            {{ route.availableBuses }} bus{{ route.availableBuses === 1 ? '' : 'es' }} ·
+            PKR {{ route.lowestPrice | number: '1.0-0' }}
+          </span>
+        </button>
+      </div>
+
+      <div *ngIf="routesLoading" class="route-loading">
+        <span class="spinner"></span> Loading routes from the database...
+      </div>
+
+      <div *ngIf="!routesLoading && !routesError && !availableRoutes.length" class="empty-routes">
+        <span class="material-icons">route</span>
+        <p>No available routes were found for {{ routeDateLabel }}.</p>
+      </div>
+
+      <button
+        *ngIf="hasMoreRoutes && availableRoutes.length"
+        type="button"
+        class="load-more-routes"
+        (click)="loadMoreRoutes()"
+        [disabled]="routesLoading"
+      >
+        {{ routesLoading ? 'Loading...' : 'Show more routes' }}
+        <span class="material-icons">expand_more</span>
+      </button>
+    </section>
+
+    <section class="benefit-grid content-section">
+      <article><span class="material-icons">price_check</span><div><h3>Transparent fares</h3><p>Compare PKR prices and available seats before selecting a bus.</p></div></article>
+      <article><span class="material-icons">event_seat</span><div><h3>Live seat plan</h3><p>Reserve or purchase seats through the existing booking API.</p></div></article>
+      <article><span class="material-icons">event_busy</span><div><h3>Ticket cancellation</h3><p>Cancel a booked or sold ticket with its ID and booking mobile.</p></div></article>
+    </section>
+
+  </div>
+</section>

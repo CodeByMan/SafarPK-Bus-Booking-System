@@ -1,0 +1,72 @@
+-- Bus Ticket Reservation System demo data
+-- Dates are always created 7, 8, and 9 days after the day this script runs.
+-- Safe for repeated local demo use: existing named routes, buses, schedules,
+-- and seats are not inserted again.
+
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+INSERT INTO "Routes" ("Id", "FromCity", "ToCity", "DistanceKm", "BoardingPoint", "DroppingPoint")
+SELECT gen_random_uuid(), values_to_insert.*
+FROM (VALUES
+    ('Dhaka', 'Rajshahi', 245::double precision, 'Gabtoli', 'Rajshahi Terminal'),
+    ('Dhaka', 'Chattogram', 295::double precision, 'Gabtoli', 'Chattogram Terminal'),
+    ('Dhaka', 'Sylhet', 240::double precision, 'Gabtoli', 'Sylhet Terminal'),
+    ('Dhaka', 'Khulna', 270::double precision, 'Gabtoli', 'Khulna Terminal'),
+    ('Dhaka', 'Barishal', 180::double precision, 'Gabtoli', 'Barishal Terminal'),
+    ('Dhaka', 'Mymensingh', 120::double precision, 'Gabtoli', 'Mymensingh Terminal')
+) AS values_to_insert("FromCity", "ToCity", "DistanceKm", "BoardingPoint", "DroppingPoint")
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM "Routes" existing
+    WHERE existing."FromCity" = values_to_insert."FromCity"
+      AND existing."ToCity" = values_to_insert."ToCity"
+);
+
+INSERT INTO "Buses" ("Id", "CompanyName", "BusName", "TotalSeats", "Price")
+SELECT gen_random_uuid(), values_to_insert.*
+FROM (VALUES
+    ('GreenLine', 'GL Express 1', 40, 850::numeric),
+    ('Shohag', 'Shohag Elite', 40, 900::numeric),
+    ('Hanif', 'Hanif Classic', 40, 780::numeric)
+) AS values_to_insert("CompanyName", "BusName", "TotalSeats", "Price")
+WHERE NOT EXISTS (
+    SELECT 1 FROM "Buses" existing WHERE existing."BusName" = values_to_insert."BusName"
+);
+
+INSERT INTO "Seats" ("Id", "BusId", "SeatNumber", "Row", "Status")
+SELECT
+    gen_random_uuid(),
+    bus."Id",
+    'A' || seat_number,
+    ((seat_number - 1) / 4) + 1,
+    0
+FROM "Buses" bus
+CROSS JOIN generate_series(1, 40) AS generated_seat(seat_number)
+WHERE bus."BusName" IN ('GL Express 1', 'Shohag Elite', 'Hanif Classic')
+  AND NOT EXISTS (
+      SELECT 1
+      FROM "Seats" existing
+      WHERE existing."BusId" = bus."Id"
+        AND existing."SeatNumber" = 'A' || seat_number
+  );
+
+INSERT INTO "BusSchedules" ("Id", "BusId", "RouteId", "JourneyDate", "StartTime", "ArrivalTime")
+SELECT
+    gen_random_uuid(),
+    bus."Id",
+    route."Id",
+    ((CURRENT_DATE + day_offset) + TIME '00:00') AT TIME ZONE 'UTC',
+    ((CURRENT_DATE + day_offset) + TIME '08:00') AT TIME ZONE 'UTC',
+    ((CURRENT_DATE + day_offset) + TIME '13:00') AT TIME ZONE 'UTC'
+FROM "Buses" bus
+CROSS JOIN "Routes" route
+CROSS JOIN generate_series(7, 9) AS generated_day(day_offset)
+WHERE bus."BusName" IN ('GL Express 1', 'Shohag Elite', 'Hanif Classic')
+  AND route."FromCity" = 'Dhaka'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM "BusSchedules" existing
+      WHERE existing."BusId" = bus."Id"
+        AND existing."RouteId" = route."Id"
+        AND existing."JourneyDate"::date = CURRENT_DATE + day_offset
+  );

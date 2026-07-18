@@ -1,0 +1,170 @@
+﻿using BusTicketReservationSystem.Application.Contracts.DTOs;
+using BusTicketReservationSystem.Application.Contracts.Interfaces;
+using BusTicketReservationSystem.Application.Services;
+using BusTicketReservationSystem.Domain.Entities;
+using BusTicketReservationSystem.Domain.Enums;
+using BusTicketReservationSystem.Domain.ValueObjects;
+using Moq;
+
+namespace BusTicketReservationSystem.Tests
+{
+    public class CancellationTests
+    {
+        private const string OwnerMobile = "01700000000";
+
+        [Fact]
+        public async Task CancelAsync_ShouldCancelTicket_WhenMobileOwnsTicket()
+        {
+            var ticket = CreateTicket(TicketStatus.Booked);
+            var ticketRepo = new Mock<ITicketRepository>();
+            var uow = CreateUnitOfWork();
+            ticketRepo.Setup(x => x.GetByIdAsync(ticket.Id)).ReturnsAsync(ticket);
+            var service = CreateService(ticketRepo, uow);
+
+            var result = await service.CancelAsync(new CancelInputDto
+            {
+                TicketId = ticket.Id,
+                PassengerMobile = OwnerMobile
+            });
+
+            Assert.True(result.Success);
+            Assert.Equal(TicketStatus.Cancelled, ticket.Status);
+            uow.Verify(x => x.SaveChangesAsync(), Times.Once);
+        }
+
+        [Fact]
+        public async Task CancelAsync_ShouldRejectCancellation_WhenMobileDoesNotOwnTicket()
+        {
+            var ticket = CreateTicket(TicketStatus.Booked);
+            var ticketRepo = new Mock<ITicketRepository>();
+            var uow = CreateUnitOfWork();
+            ticketRepo.Setup(x => x.GetByIdAsync(ticket.Id)).ReturnsAsync(ticket);
+            var service = CreateService(ticketRepo, uow);
+
+            var result = await service.CancelAsync(new CancelInputDto
+            {
+                TicketId = ticket.Id,
+                PassengerMobile = "01800000000"
+            });
+
+            Assert.False(result.Success);
+            Assert.Equal(BookingResultCode.Forbidden, result.Code);
+            Assert.Equal(TicketStatus.Booked, ticket.Status);
+            uow.Verify(x => x.SaveChangesAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task CancelAsync_ShouldRejectRepeatedCancellation()
+        {
+            var ticket = CreateTicket(TicketStatus.Cancelled);
+            var ticketRepo = new Mock<ITicketRepository>();
+            var uow = CreateUnitOfWork();
+            ticketRepo.Setup(x => x.GetByIdAsync(ticket.Id)).ReturnsAsync(ticket);
+            var service = CreateService(ticketRepo, uow);
+
+            var result = await service.CancelAsync(new CancelInputDto
+            {
+                TicketId = ticket.Id,
+                PassengerMobile = OwnerMobile
+            });
+
+            Assert.False(result.Success);
+            Assert.Equal(BookingResultCode.Conflict, result.Code);
+            uow.Verify(x => x.SaveChangesAsync(), Times.Never);
+        }
+
+        [Fact]
+        public async Task CancelAsync_ShouldMakeSeatAvailableInScheduleSeatPlan()
+        {
+            var ticket = CreateTicket(TicketStatus.Sold);
+            var schedule = new BusSchedule
+            {
+                Id = ticket.BusScheduleId,
+                BusId = ticket.Seat.BusId,
+                Bus = new Bus
+                {
+                    Id = ticket.Seat.BusId,
+                    BusName = "GreenLine",
+                    CompanyName = "GreenLine Ltd."
+                },
+                Route = new Route
+                {
+                    BoardingPoint = "Gabtoli",
+                    DroppingPoint = "Mymensingh Terminal"
+                },
+                Tickets = new List<Ticket> { ticket }
+            };
+
+            var ticketRepo = new Mock<ITicketRepository>();
+            var scheduleRepo = new Mock<IBusScheduleRepository>();
+            var seatRepo = new Mock<ISeatRepository>();
+            var uow = CreateUnitOfWork();
+            ticketRepo.Setup(x => x.GetByIdAsync(ticket.Id)).ReturnsAsync(ticket);
+            scheduleRepo.Setup(x => x.GetByIdAsync(schedule.Id)).ReturnsAsync(schedule);
+            seatRepo.Setup(x => x.GetByBusIdAsync(schedule.BusId))
+                .ReturnsAsync(new List<Seat> { ticket.Seat });
+
+            var service = new BookingService(
+                scheduleRepo.Object,
+                seatRepo.Object,
+                ticketRepo.Object,
+                Mock.Of<IPassengerRepository>(),
+                uow.Object);
+
+            var cancelResult = await service.CancelAsync(new CancelInputDto
+            {
+                TicketId = ticket.Id,
+                PassengerMobile = OwnerMobile
+            });
+            var seatPlan = await service.GetSeatPlanAsync(schedule.Id);
+
+            Assert.True(cancelResult.Success);
+            Assert.NotNull(seatPlan);
+            Assert.Equal("Available", Assert.Single(seatPlan.Seats).Status);
+        }
+
+        private static BookingService CreateService(
+            Mock<ITicketRepository> ticketRepo,
+            Mock<IUnitOfWork> uow)
+        {
+            return new BookingService(
+                Mock.Of<IBusScheduleRepository>(),
+                Mock.Of<ISeatRepository>(),
+                ticketRepo.Object,
+                Mock.Of<IPassengerRepository>(),
+                uow.Object);
+        }
+
+        private static Mock<IUnitOfWork> CreateUnitOfWork()
+        {
+            var uow = new Mock<IUnitOfWork>();
+            uow.Setup(x => x.SaveChangesAsync()).Returns(Task.CompletedTask);
+            return uow;
+        }
+
+        private static Ticket CreateTicket(TicketStatus status)
+        {
+            var busId = Guid.NewGuid();
+            var passenger = new Passenger(new PassengerContact("Ticket Owner", OwnerMobile))
+            {
+                Id = Guid.NewGuid()
+            };
+            var seat = new Seat(new SeatPosition("A1", 1))
+            {
+                Id = Guid.NewGuid(),
+                BusId = busId
+            };
+
+            return new Ticket
+            {
+                Id = Guid.NewGuid(),
+                SeatId = seat.Id,
+                Seat = seat,
+                PassengerId = passenger.Id,
+                Passenger = passenger,
+                BusScheduleId = Guid.NewGuid(),
+                Status = status
+            };
+        }
+    }
+}

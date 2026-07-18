@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36518.9
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTicketReservationSystem.Domain", "src\BusTicketReservationSystem.Domain\BusTicketReservationSystem.Domain.csproj", "{EA277F76-1458-433C-AD52-88831A95EFC6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTicketReservationSystem.Application", "src\BusTicketReservationSystem.Application\BusTicketReservationSystem.Application.csproj", "{C7C47EFB-626E-4F26-971B-EA95393BDF72}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTicketReservationSystem.Application.Contracts", "src\BusTicketReservationSystem.Application.Contracts\BusTicketReservationSystem.Application.Contracts.csproj", "{54ACF1B1-42D1-4321-9438-894B738CDAA1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTicketReservationSystem.Infrastructure", "src\BusTicketReservationSystem.Infrastructure\BusTicketReservationSystem.Infrastructure.csproj", "{6AD68BBD-B77F-482F-B742-AEFBB631CC95}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTicketReservationSystem.WebApi", "src\BusTicketReservationSystem.WebApi\BusTicketReservationSystem.WebApi.csproj", "{6F835CBF-B2D5-4725-AF11-4F8EECAE2CE1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BusTicketReservationSystem.Tests", "src\BusTicketReservationSystem.Tests\BusTicketReservationSystem.Tests.csproj", "{C7954CD7-9F82-4737-8EDD-3D5C2B41273C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{EA277F76-1458-433C-AD52-88831A95EFC6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EA277F76-1458-433C-AD52-88831A95EFC6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EA277F76-1458-433C-AD52-88831A95EFC6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EA277F76-1458-433C-AD52-88831A95EFC6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7C47EFB-626E-4F26-971B-EA95393BDF72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7C47EFB-626E-4F26-971B-EA95393BDF72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7C47EFB-626E-4F26-971B-EA95393BDF72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7C47EFB-626E-4F26-971B-EA95393BDF72}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54ACF1B1-42D1-4321-9438-894B738CDAA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54ACF1B1-42D1-4321-9438-894B738CDAA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54ACF1B1-42D1-4321-9438-894B738CDAA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54ACF1B1-42D1-4321-9438-894B738CDAA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6AD68BBD-B77F-482F-B742-AEFBB631CC95}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6AD68BBD-B77F-482F-B742-AEFBB631CC95}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6AD68BBD-B77F-482F-B742-AEFBB631CC95}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6AD68BBD-B77F-482F-B742-AEFBB631CC95}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6F835CBF-B2D5-4725-AF11-4F8EECAE2CE1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6F835CBF-B2D5-4725-AF11-4F8EECAE2CE1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6F835CBF-B2D5-4725-AF11-4F8EECAE2CE1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6F835CBF-B2D5-4725-AF11-4F8EECAE2CE1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7954CD7-9F82-4737-8EDD-3D5C2B41273C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7954CD7-9F82-4737-8EDD-3D5C2B41273C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7954CD7-9F82-4737-8EDD-3D5C2B41273C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7954CD7-9F82-4737-8EDD-3D5C2B41273C}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {BDAD65B1-D12E-4805-B76F-CA7153C34F79}
+	EndGlobalSection
+EndGlobal
